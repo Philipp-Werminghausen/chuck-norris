@@ -198,9 +198,9 @@ if (!process.env.channelid) {
 			},{
 				name:"Judo Push-up",
 				description:"From a push-up position, raise up those hips and in one swift movement (Hai-yah!) use the arms to lower the front of the body until the chin comes close to the floor. Swoop the head and shoulders upward and lower the hips, keeping the knees off the ground. Reverse the move to come back to the raised-hip position. Try to repeat for XXX seconds.",
-				type: "time",
-				range: "30-60",
-				increments: 10
+				type: "count",
+				range: "8-10",
+				increments: 1
 			},{
 				name:"Superman",
 				description:"Lie face down with arms and legs extended. Keeping the torso as still as possible, simultaneously raise the arms and legs to form a small curve in the body. Cape optional.",
@@ -613,7 +613,8 @@ if (!process.env.channelid) {
 						url:'http://api.giphy.com/v1/gifs/search',
 						qs:{
 							q:search.toLowerCase().replace(/ /g,"+"),
-							api_key:"dc6zaTOxFJmzC"//giphy beta test API token
+							api_key:"dc6zaTOxFJmzC",//giphy beta test API token
+							rating:"pg-13"//https://github.com/Giphy/GiphyAPI
 						}
 					}, function (error, response, body) {
 					if (!error && response.statusCode == 200) {
@@ -637,11 +638,11 @@ if (!process.env.channelid) {
 				var newExercise = this.pickExercise(),
 					nextExerciseIn = this.getTimeUntilNextExercise(),
 					interval = this.pickInterval(exercise.range,exercise.increments),
-					nextUp = newExercise.name + " is next up in " + nextExerciseIn/60000 + "min !";
+					nextUp = newExercise.name + " is next up in " + Math.ceil(nextExerciseIn/60000) + "min !";
 
 				slack.getUsersFromChannel(function (users) {
 					slack.pickMultipleActiveUsers(users,function (chosenUsers) {
-						if(users.length){
+						if(!users.length){
 							var callOutUsers = "";
 							for (var i = chosenUsers.length - 1; i >= 0; i--) {
 								callOutUsers += "@" + chosenUsers[i].name + ", ";
