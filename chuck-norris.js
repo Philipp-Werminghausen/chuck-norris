@@ -197,7 +197,7 @@ if (!process.env.channelid) {
 				increments: 1
 			},{
 				name:"Judo Push-up",
-				description:"From a push-up position, raise up those hips and in one swift movement (Hai-yah!) use the arms to lower the front of the body until the chin comes close to the floor. Swoop the head and shoulders upward and lower the hips, keeping the knees off the ground. Reverse the move to come back to the raised-hip position. Try to repeat for XXX seconds.",
+				description:"From a push-up position, raise up those hips and in one swift movement (Hai-yah!) use the arms to lower the front of the body until the chin comes close to the floor. Swoop the head and shoulders upward and lower the hips, keeping the knees off the ground. Reverse the move to come back to the raised-hip position. Try to repeat XXX times.",
 				type: "count",
 				range: "8-10",
 				increments: 1
@@ -549,7 +549,10 @@ if (!process.env.channelid) {
 					return;
 				});
 			},
-			pickOneActiveUser:function (users,callback) {
+			pickOneActiveUser:function (allUsers,callback) {
+				var users = allUsers.slice();
+				// console.log("picking an active user grom the following list");
+				// console.log(users);
 				if(!users){callback(null);return;}
 				var userId = util.pickOne(users);
 				this.getUserPresence(userId,function (presence) {
@@ -557,6 +560,8 @@ if (!process.env.channelid) {
 					if(presence == "active"){
 						slack.getUser(userId,function (user){
 							if(!user.is_bot){
+								// console.log("picked user with ID");
+								// console.log(userId);
 								callback(user);
 							}else{
 								if(!users.length){callback(null);return;}
@@ -572,16 +577,21 @@ if (!process.env.channelid) {
 			},
 			pickMultipleActiveUsers: function (users,callback,numberOfUsers,chosen) {
 				chosen = chosen || [];
-				if(chosen.length >= numberOfUsers){callback(chosen);return;}
+				if(chosen.length >= numberOfUsers){callback(chosen);console.log("returning because number of requested users have been chosen");return;}
 
 				this.pickOneActiveUser(users,function (user) {
 					//could return null if onon of the users are active
 					if(!user){callback(chosen);return;}
 					//found active user. Add him 
 					chosen.push(user);
-					users = util.removeFromArray(users,user);
+
+					// console.log("chosens are :");
+					// console.log(chosen);
+
+					util.removeFromArray(users,user.id);
 					if(!users.length){callback(chosen);return;}
 
+					// console.log("picking next user");
 					slack.pickMultipleActiveUsers(users,callback,numberOfUsers,chosen);
 				});
 			},
@@ -639,15 +649,20 @@ if (!process.env.channelid) {
 					nextExerciseIn = this.getTimeUntilNextExercise(),
 					interval = this.pickInterval(exercise.range,exercise.increments),
 					nextUp = newExercise.name + " is next up in " + Math.ceil(nextExerciseIn/60000) + "min !";
-
+				console.log("running exercise");
 				slack.getUsersFromChannel(function (users) {
+					// console.log("found users in channel");
+					// console.log(users);
 					slack.pickMultipleActiveUsers(users,function (chosenUsers) {
-						if(!users.length){
+						console.log("have chosen");
+						console.log(chosenUsers);
+						if(chosenUsers.length){
+							console.log("Running now");
 							var callOutUsers = "";
 							for (var i = chosenUsers.length - 1; i >= 0; i--) {
 								callOutUsers += "@" + chosenUsers[i].name + ", ";
 							};
-							var say = callOutUsers + "you’re up with " + (exercise.type == "time"? exercise.name + " for " + interval + " seconds": interval + " " + exercise.name + " reps.");
+							var say = callOutUsers + "you’re up with " + (exercise.type == "time"? exercise.name + " for " + interval + " seconds": interval + " reps of " + exercise.name);
 							slack.postMessage(say);
 							util.wait(1,function () {
 								slack.postMessage(exercise.description.replace(/XXX/,interval));
@@ -659,6 +674,7 @@ if (!process.env.channelid) {
 								slack.postMessage(nextUp);
 							});
 						}
+						console.log("Schedule next");
 						train.scheduleNewExercise(nextExerciseIn,newExercise);
 					},util.random(2,4))
 				});
@@ -689,10 +705,10 @@ if (!process.env.channelid) {
 
 		train.scheduleNewExercise(0,train.pickExercise());
 
-	controller.hears(['chuck','norris','chuck norris'],'direct_mention,mention,ambient',function(bot, message) { 
-		slack.postGif('chuck+norris');
-		slack.postMessage(funChuckFacts[util.random(0,funChuckFacts.length-1)]);
-	});
+	// controller.hears(['chuck','norris','chuck norris'],'direct_mention,mention,ambient',function(bot, message) { 
+	// 	slack.postGif('chuck+norris');
+	// 	slack.postMessage(funChuckFacts[util.random(0,funChuckFacts.length-1)]);
+	// });
 	controller.hears(['(.*)'],'direct_message',function(bot, message) {
 		if(message.user == "U0ALEFATY"){//philipp ;P
 			slack.postMessage(message.text);
