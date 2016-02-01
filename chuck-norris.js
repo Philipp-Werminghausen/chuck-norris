@@ -689,4 +689,14 @@ if (!process.env.channelid) {
 
 		train.scheduleNewExercise(0,train.pickExercise());
 
+	controller.hears(['chuck','norris','chuck norris'],'direct_mention,mention,ambient',function(bot, message) { 
+		slack.postGif('chuck+norris');
+		slack.postMessage(funChuckFacts[util.random(0,funChuckFacts.length-1)]);
+	});
+	controller.hears(['(.*)'],'direct_message',function(bot, message) {
+		if(message.user == "U0ALEFATY"){//philipp ;P
+			slack.postMessage(message.text);
+		}
+	});
+
 })();
