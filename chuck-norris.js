@@ -4,10 +4,10 @@ if (!process.env.token) {
     process.exit(1);
 }
 //firebase secret
-if (!process.env.secret) {
-    console.log('Error: Specify secret in environment');
-    process.exit(1);
-}
+// if (!process.env.secret) {
+//     console.log('Error: Specify secret in environment');
+//     process.exit(1);
+// }
 //slack channel id
 if (!process.env.channelid) {
     console.log('Error: Specify channelid in environment');
@@ -319,19 +319,25 @@ if (!process.env.channelid) {
 		],
 		fun:[
 			{
-				name:"Get a drink.",
+				name:"Getting a drink!",
 				description:"Just walk into the kitchen and grab a water, tea, coffee or beer!",
 				type: "count",
 				range: "1-1",
 				increments: 1
 			},{
-				name:"Take a nap.",
-				description:"Just walk into the kitchen and grab a water, tea or coffee!",
+				name:"Takeing a nap!",
+				description:"Find a compfy spot in the office and lie down and close your eyes.",
+				type: "time",
+				range: "60-120",
+				increments: 60
+			},{
+				name:"Takeing a break!",
+				description:"Relax for XXX seconds, step away from your computer.",
 				type: "time",
 				range: "60-120",
 				increments: 60
 			}
-		];
+		]
 	},
 	funChuckFacts = [
 		"There used to be a street named after Chuck Norris, but it was changed because nobody crosses Chuck Norris and lives.",
@@ -485,12 +491,15 @@ if (!process.env.channelid) {
 				return arr.indexOf(value) < 0 ? false : true;
 			},
 			removeFromArray: function(arr,value){
-				return arr.splice(arr.indexOf(item), 1);
+				return arr.splice(arr.indexOf(value), 1);
+			},
+			wait: function (sec,action) {
+				setTimeout(action,sec * 1000);
 			}
 		},
 		slack = {
 			getChannel: function (callback) {
-				request({url:'https://slack.com/api/channels.list',
+				request({url:'https://slack.com/api/channels.info',
 					qs:{
 						token:process.env.token,
 						channel:process.env.channelid
@@ -498,7 +507,7 @@ if (!process.env.channelid) {
 					if (!error && response.statusCode == 200) {
 						body = JSON.parse(body);
 						if(body.ok){
-							callback(body.channels);
+							callback(body.channel);
 							return;
 				        }
 				    }
@@ -541,18 +550,24 @@ if (!process.env.channelid) {
 				});
 			},
 			pickOneActiveUser:function (users,callback) {
-				limit = limit-- || 10;
-				var user = util.pickOne(users)
-				this.getUserPresence(user,function (presence) {
-					users = util.removeFromArray(users,user);
-					if(!users.length){callback(null);return;}
-
+				if(!users){callback(null);return;}
+				var userId = util.pickOne(users);
+				this.getUserPresence(userId,function (presence) {
+					util.removeFromArray(users,userId);
 					if(presence == "active"){
-						callback(user);
+						slack.getUser(userId,function (user){
+							if(!user.is_bot){
+								callback(user);
+							}else{
+								if(!users.length){callback(null);return;}
+								slack.pickOneActiveUser(users,callback);
+							}
+						});
 						return;
-					}else{
-						slack.pickOneActiveUser(users,callback);
 					}
+					if(!users.length){callback(null);return;}
+					slack.pickOneActiveUser(users,callback);
+					
 				});
 			},
 			pickMultipleActiveUsers: function (users,callback,numberOfUsers,chosen) {
@@ -576,7 +591,7 @@ if (!process.env.channelid) {
 						url:'https://slack.com/api/chat.postMessage',
 						qs:{
 							token:process.env.token,
-							channel:channelId,
+							channel:process.env.channelid,
 							text: message,
 							link_names:1,
 							unfurl_media:true,
@@ -603,16 +618,15 @@ if (!process.env.channelid) {
 					}, function (error, response, body) {
 					if (!error && response.statusCode == 200) {
 						body = JSON.parse(body);
-						console.log(body);
 						if(typeof body.data === "object" && body.data.length){
 							var gifs = body.data;
-							slack.postMessage(gifs[random(0,gifs.length-1)]['url']);
+							slack.postMessage(gifs[util.random(0,gifs.length-1)]['url']);
 						}
 					}
 				});
 			},
 			postFunFact:function() {
-				postMessage(funChuckFacts[random(0,funChuckFacts.length-1)]);
+				slack.postMessage(funChuckFacts[util.random(0,funChuckFacts.length-1)]);
 			}
 		},
 		firebase = {
@@ -621,40 +635,49 @@ if (!process.env.channelid) {
 		train = {
 			runExercise: function (exercise) {
 				var newExercise = this.pickExercise(),
-					nextExerciseIn = getTimeUntilNextExercise(),
-					interval = pickInterval(exercise.type,exercise.difficulty),
-					nextUp = newExercise.activity + " is next up in " + nextExerciseIn/60000 + "min !";
+					nextExerciseIn = this.getTimeUntilNextExercise(),
+					interval = this.pickInterval(exercise.range,exercise.increments),
+					nextUp = newExercise.name + " is next up in " + nextExerciseIn/60000 + "min !";
 
 				slack.getUsersFromChannel(function (users) {
 					slack.pickMultipleActiveUsers(users,function (chosenUsers) {
-						var callOutUsers = "";
-						for (var i = chosenUsers.length - 1; i >= 0; i--) {
-							callOutUsers += "@" + chosenUsers[i] + ", ";
-						};
-						var say = callOutUsers + "you’re up with " + exercise.name + " for " + interval + (exercise.type == "time"?" seconds":" times.");
-						slack.postMessage(say);
-						util.chance(50)?sack.postFunFact();
-						util.chance(25)?sack.postGif(exercise.name);
-						scheduleNewExercise(nextExerciseIn,newExercise);
+						if(users.length){
+							var callOutUsers = "";
+							for (var i = chosenUsers.length - 1; i >= 0; i--) {
+								callOutUsers += "@" + chosenUsers[i].name + ", ";
+							};
+							var say = callOutUsers + "you’re up with " + (exercise.type == "time"? exercise.name + " for " + interval + " seconds": interval + " " + exercise.name + " reps.");
+							slack.postMessage(say);
+							util.wait(1,function () {
+								slack.postMessage(exercise.description.replace(/XXX/,interval));
+							});
+							util.wait(1,function () {
+								slack.postGif(exercise.name);
+							});
+							util.wait(10,function () {
+								slack.postMessage(nextUp);
+							});
+						}
+						train.scheduleNewExercise(nextExerciseIn,newExercise);
 					},util.random(2,4))
 				});
 			},
 			pickExercise: function (type) {
 				if(!type){
 					var keys = Object.keys(exercises)
-					type = keys[random(0,keys.length-1)];
+					type = keys[util.random(0,keys.length-1)];
 				}
-				return exercises[type][random(0,exercises[type].length-1)];
+				return exercises[type][util.random(0,exercises[type].length-1)];
 			},
 			getTimeUntilNextExercise: function() {
 				var minMinutes = 30,
 				  	maxMinutes = 60;
-				return random(minMinutes,maxMinutes) * 1000 * 60;
+				return util.random(minMinutes,maxMinutes) * 1000 * 60;
 			},
 			pickInterval: function (range,offset) {
 				var low = parseInt(range.split("-")[0]),
 					high = parseInt(range.split("-")[1]);
-				return random(low,high) + (chance(50)?offset:0);
+				return util.random(low,high) + (util.chance(50)?offset:0);
 			},
 			scheduleNewExercise: function(time,exercise) {
 				setTimeout(function (){
@@ -663,5 +686,6 @@ if (!process.env.channelid) {
 			}
 		};
 
+		train.scheduleNewExercise(0,train.pickExercise());
 
 })();
