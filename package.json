@@ -6,6 +6,7 @@
   "dependencies": {
     "body-parser": "^1.14.2",
     "express": "^4.13.3",
+    "firebase": "^2.4.0",
     "jfs": "^0.2.6",
     "moment": "^2.11.2",
     "mustache": "^2.2.1",
