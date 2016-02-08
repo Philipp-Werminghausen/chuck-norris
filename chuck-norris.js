@@ -4,10 +4,10 @@ if (!process.env.token) {
     process.exit(1);
 }
 //firebase secret
-// if (!process.env.secret) {
-//     console.log('Error: Specify secret in environment');
-//     process.exit(1);
-// }
+if (!process.env.secret) {
+    console.log('Error: Specify secret in environment');
+    process.exit(1);
+}
 //slack channel id
 if (!process.env.channelid) {
     console.log('Error: Specify channelid in environment');
@@ -20,7 +20,8 @@ if (!process.env.channelid) {
 	    os = require('os'),
 	    http = require('http'),
 	    request = require('request'),
-	    Firebase = require('firebase');
+	    Firebase = require('firebase'),
+	    moment = require('moment');
 
 	var controller = Botkit.slackbot({
 	    debug: false,
@@ -325,13 +326,13 @@ if (!process.env.channelid) {
 				range: "1-1",
 				increments: 1
 			},{
-				name:"Takeing a nap!",
+				name:"Taking a nap!",
 				description:"Find a compfy spot in the office and lie down and close your eyes.",
 				type: "time",
 				range: "60-120",
 				increments: 60
 			},{
-				name:"Takeing a break!",
+				name:"Taking a break!",
 				description:"Relax for XXX seconds, step away from your computer.",
 				type: "time",
 				range: "60-120",
@@ -642,13 +643,25 @@ if (!process.env.channelid) {
 		},
 		firebase = {
 			//connect to firebase to sync workouts, funFacts, exerciseHistory
+			logExercise: function (user,exercise,interval) {
+				var runkeeperFit = new Firebase('https://chuck-norris.firebaseio.com/');
+				  runkeeperFit.authWithCustomToken(process.env.secret, function(error, authData) {
+				    console.log("Error if any : " + error);
+				    if (!error) {
+						runkeeperFit.child("users").child(user.name).push({"time" :moment().format(),"exercise" : exercise.name,"type":exercise.type,"interval":interval});
+						runkeeperFit.child("users").child(user.name).child("total_exercises").transaction(function(current_value) {
+				        	return (current_value || 0) + 1;
+				      	});
+				    }
+				});
+			}
 		},
 		train = {
 			runExercise: function (exercise) {
 				var newExercise = this.pickExercise(),
 					nextExerciseIn = this.getTimeUntilNextExercise(),
 					interval = this.pickInterval(exercise.range,exercise.increments),
-					nextUp = newExercise.name + " is next up in " + Math.ceil(nextExerciseIn/60000) + "min !";
+					nextUp = nextExerciseIn > 3600000 ? "We will start again tomorrow at 10am." : newExercise.name + " is next up in " + Math.ceil(nextExerciseIn/60000) + "min !";
 				console.log("running exercise");
 				slack.getUsersFromChannel(function (users) {
 					// console.log("found users in channel");
@@ -660,6 +673,7 @@ if (!process.env.channelid) {
 							console.log("Running now");
 							var callOutUsers = "";
 							for (var i = chosenUsers.length - 1; i >= 0; i--) {
+								firebase.logExercise(chosenUsers[i],exercise,interval);
 								callOutUsers += "@" + chosenUsers[i].name + ", ";
 							};
 							var say = callOutUsers + "you’re up with " + (exercise.type == "time"? exercise.name + " for " + interval + " seconds": interval + " reps of " + exercise.name);
@@ -682,13 +696,21 @@ if (!process.env.channelid) {
 			pickExercise: function (type) {
 				if(!type){
 					var keys = Object.keys(exercises)
-					type = keys[util.random(0,keys.length-1)];
+					type = keys[util.random(0,keys.length-2)];
 				}
 				return exercises[type][util.random(0,exercises[type].length-1)];
 			},
 			getTimeUntilNextExercise: function() {
 				var minMinutes = 30,
 				  	maxMinutes = 60;
+				if(moment().isAfter(moment().hours(17).minutes(0).seconds(0))){
+					var tempTimeout = (moment().add(1, 'days').hours(10).minutes(0).seconds(0).unix() - moment().unix()) * 1000;
+					setTimeout(function (){
+						slack.postMessage("Get Ready! We will start in 10min!");
+					},tempTimeout - 10 * 60 * 1000);
+					slack.postMessage("This is the last exercise for today!");
+					return tempTimeout;
+				}
 				return util.random(minMinutes,maxMinutes) * 1000 * 60;
 			},
 			pickInterval: function (range,offset) {
@@ -702,8 +724,12 @@ if (!process.env.channelid) {
 				},time);
 			}
 		};
-
-		train.scheduleNewExercise(0,train.pickExercise());
+		var tempTimeout = (moment().add(1, 'days').hours(10).minutes(0).seconds(0).unix() - moment().unix()) * 1000;
+		setTimeout(function (){
+			slack.postMessage("Get Ready! We will start in 10min!");
+		},tempTimeout - 10 * 60 * 1000);
+		train.scheduleNewExercise(tempTimeout,train.pickExercise());
+		// train.scheduleNewExercise(0,train.pickExercise());
 
 	// controller.hears(['chuck','norris','chuck norris'],'direct_mention,mention,ambient',function(bot, message) { 
 	// 	slack.postGif('chuck+norris');
