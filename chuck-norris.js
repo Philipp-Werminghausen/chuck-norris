@@ -596,13 +596,14 @@ if (!process.env.channelid) {
 					slack.pickMultipleActiveUsers(users,callback,numberOfUsers,chosen);
 				});
 			},
-			postMessage:function (message){
+			postMessage:function (message,userId){
+				userId = userId || process.env.channelid
 				request(
 					{
 						url:'https://slack.com/api/chat.postMessage',
 						qs:{
 							token:process.env.token,
-							channel:process.env.channelid,
+							channel:userId,
 							text: message,
 							link_names:1,
 							unfurl_media:true,
@@ -723,21 +724,94 @@ if (!process.env.channelid) {
 					train.runExercise(exercise);
 				},time);
 			}
+		},
+		classes = {
+			startClass: function(say,type,difficulty,minutes) {
+				var level = {
+					"easy":{
+						"intervalSec":30,
+						"restSec":30
+					},
+					"medium":{
+						"intervalSec":40,
+						"restSec":20
+					},
+					"hard":{
+						"intervalSec":50,
+						"restSec":10
+					},
+					"chuck":{
+						"intervalSec":55,
+						"restSec":5
+					}
+				}
+				say("Alright!");
+				say("Our " + minutes + "min class will begin now!");
+				this.runExercise(say,type,level[difficulty].intervalSec,level[difficulty].restSec,minutes,function () {
+					say("Awesome!");
+					say("You completed your " + minutes + "minute workout!");
+				})
+			},
+			runExercise: function (say,type,intervalSec,restSec,exerciseCount,callback) {
+				type = type || null;
+				exerciseCount = exerciseCount - 1;
+				if(exerciseCount < 0){
+					callback();
+					return;
+				}
+				if(typeof type === "string" && !type.length){
+					type = null;
+				}
+				//pick exercise
+				var exercise = train.pickExercise(type);
+				say(exercise.name + " for " + intervalSec + "sec");
+				//say(exercise.description);
+				setTimeout(function(){
+					say("get ready we start in " + (restSec - 1) + "sec!");
+				},1000);
+				//start countdown
+				this.countdown(say,restSec,function() {
+					//start exercise
+					say("start NOW!!!");
+					classes.countdown(say,intervalSec,function() {
+						//say("done!");
+						classes.runExercise(say,type,intervalSec,restSec,exerciseCount,callback);
+					});
+				});
+			},
+			countdown: function (say,seconds,callback) {
+				if(seconds <= 1){
+					setTimeout(callback,seconds * 1000);
+				}else{
+					var timeElapsed = seconds <= 5 ? 1 : (Math.ceil(seconds/2) > 5? Math.ceil(seconds/2) : -5 + seconds);
+					setTimeout(function() {
+						var timeLeft = seconds - timeElapsed;
+						say(timeLeft + (timeLeft>5?" seconds left":""));
+						classes.countdown(say,timeLeft,callback);
+					},timeElapsed * 1000);
+				}
+			}
 		};
-		var tempTimeout = (moment().add(1, 'days').hours(10).minutes(0).seconds(0).unix() - moment().unix()) * 1000;
-		setTimeout(function (){
-			slack.postMessage("Get Ready! We will start in 10min!");
-		},tempTimeout - 10 * 60 * 1000);
-		train.scheduleNewExercise(tempTimeout,train.pickExercise());
+		// var tempTimeout = (moment().hours(10).minutes(0).seconds(0).unix() - moment().unix()) * 1000;
+		// setTimeout(function (){
+		// 	slack.postMessage("Get Ready! We will start in 10min!");
+		// },tempTimeout - 10 * 60 * 1000);
+		// train.scheduleNewExercise(tempTimeout,train.pickExercise());
 		// train.scheduleNewExercise(0,train.pickExercise());
 
 	// controller.hears(['chuck','norris','chuck norris'],'direct_mention,mention,ambient',function(bot, message) { 
 	// 	slack.postGif('chuck+norris');
 	// 	slack.postMessage(funChuckFacts[util.random(0,funChuckFacts.length-1)]);
 	// });
-	controller.hears(['(.*)'],'direct_message',function(bot, message) {
+	controller.hears(['(start class)'],'direct_message',function(bot, message) {
+		var type = 	"",
+			say = function(text){slack.postMessage(text,message.user);},
+			difficulty = "hard",
+			minutes = 1;
+
 		if(message.user == "U0ALEFATY"){//philipp ;P
-			slack.postMessage(message.text);
+			classes.startClass(say,type,difficulty,minutes);
+			//slack.postMessage(message.text);
 		}
 	});
 
