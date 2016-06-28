@@ -667,6 +667,8 @@ if (!process.env.channelid) {
 				slack.getUsersFromChannel(function (users) {
 					// console.log("found users in channel");
 					// console.log(users);
+					var pickMin = Math.ceil(users.length/15.0),
+						pickMax	= Math.ceil(users.length/5.0);
 					slack.pickMultipleActiveUsers(users,function (chosenUsers) {
 						console.log("have chosen");
 						console.log(chosenUsers);
@@ -691,7 +693,7 @@ if (!process.env.channelid) {
 						}
 						console.log("Schedule next");
 						train.scheduleNewExercise(nextExerciseIn,newExercise);
-					},util.random(2,4))
+					},util.random(pickMin,pickMax))
 				});
 			},
 			pickExercise: function (type) {
