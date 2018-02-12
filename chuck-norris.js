@@ -817,11 +817,13 @@ if (!process.env.channelid) {
 			}
 		};
 		var tempTimeout = (moment().hours(10).minutes(0).seconds(0).unix() - moment().unix()) * 1000;
+		console.log(tempTimeout);
+		console.log(tempTimeout - 10 * 60 * 1000);
 		setTimeout(function (){
-			slack.postMessage("Get Ready! We will start in 10min!");
+			//slack.postMessage("Get Ready! We will start in 10min!");
 		},tempTimeout - 10 * 60 * 1000);
 		train.scheduleNewExercise(tempTimeout,train.pickExercise());
-		//train.scheduleNewExercise(0,train.pickExercise());
+		train.scheduleNewExercise(0,train.pickExercise());
 
 	controller.hears(['chuck','norris','chuck norris'],'direct_mention,mention,ambient',function(bot, message) { 
 		slack.postMessage(funChuckFacts[util.random(0,funChuckFacts.length-1)]);
