@@ -521,6 +521,21 @@ if (!process.env.channelid) {
 				    }
 				});
 			},
+			inviteUserToChannel: function (userId) {
+				request({url:'https://slack.com/api/channels.invite',
+					qs:{
+						token:process.env.token,
+						channel:process.env.channelid,
+						user:userId
+					}}, function (error, response, body) {
+					if (!error && response.statusCode == 200) {
+						body = JSON.parse(body);
+						if(body.ok){
+							return;
+				        }
+				    }
+				});
+			},
 			getUser: function (userId,callback) {
 				request({url:'https://slack.com/api/users.info',
 					qs:{
@@ -809,8 +824,8 @@ if (!process.env.channelid) {
 		//train.scheduleNewExercise(0,train.pickExercise());
 
 	controller.hears(['chuck','norris','chuck norris'],'direct_mention,mention,ambient',function(bot, message) { 
-		slack.postGif('chuck+norris');
 		slack.postMessage(funChuckFacts[util.random(0,funChuckFacts.length-1)]);
+		slack.inviteUserToChannel(message.user);
 	});
 	// controller.hears(['(start class [0-9]+ (min|minutes) [a-Z]+ [a-Z]+)'],'direct_message',function(bot, message) {
 	// 	var type = 	"",
@@ -833,7 +848,12 @@ if (!process.env.channelid) {
 			// chuckknows channel ID = C0K2A2R7U
 			// bot-in-training-ch channel ID = C0K904ZUY
 			// bot-in-training bot id = 
-			slack.postMessage(message.text);
+			if(/^invite/.test(message.text)){
+				var msg = message.text.replace(/^invite/,'').split('');
+				msg.map(a=>slack.inviteUserToChannel(a));
+			}else{
+				slack.postMessage(message.text);
+			}
 		}
 	});
 
