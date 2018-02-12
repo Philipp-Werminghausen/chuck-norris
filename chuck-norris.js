@@ -820,7 +820,7 @@ if (!process.env.channelid) {
 		setTimeout(function (){
 			slack.postMessage("Get Ready! We will start in 10min!");
 		},tempTimeout - 10 * 60 * 1000);
-		//train.scheduleNewExercise(tempTimeout,train.pickExercise());
+		train.scheduleNewExercise(tempTimeout,train.pickExercise());
 		//train.scheduleNewExercise(0,train.pickExercise());
 
 	controller.hears(['chuck','norris','chuck norris'],'direct_mention,mention,ambient',function(bot, message) { 
@@ -850,7 +850,7 @@ if (!process.env.channelid) {
 			// bot-in-training bot id = 
 			if(/^invite/.test(message.text)){
 				var msg = message.text.replace(/^invite/,'').split('');
-				msg.map(a=>slack.inviteUserToChannel(a));
+				msg.map(a=>a.length?slack.inviteUserToChannel(a):console.log('not an id'));
 			}else{
 				slack.postMessage(message.text);
 			}
