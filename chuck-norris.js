@@ -22,7 +22,8 @@ if (!process.env.channelid) {
 	    http = require('http'),
 	    request = require('request'),
 	    Firebase = require('firebase'),
-	    moment = require('moment');
+	    moment = require('moment'),
+	    timezoneOffset = 0;
 
 	var controller = Botkit.slackbot({
 	    debug: false,
@@ -671,8 +672,8 @@ if (!process.env.channelid) {
 				  runkeeperFit.authWithCustomToken(process.env.secret, function(error, authData) {
 				    console.log("Error if any : " + error);
 				    if (!error) {
-						runkeeperFit.child("users").child(user.name).push({"time" :moment().format(),"exercise" : exercise.name,"type":exercise.type,"interval":interval});
-						runkeeperFit.child("users").child(user.name).child("total_exercises").transaction(function(current_value) {
+						runkeeperFit.child("users").child(user.name.replace(/\.|\#|\$|\[|\]/g,'_')).push({"time" :moment().format(),"exercise" : exercise.name,"type":exercise.type,"interval":interval});
+						runkeeperFit.child("users").child(user.name.replace(/\.|\#|\$|\[|\]/g,'_')).child("total_exercises").transaction(function(current_value) {
 				        	return (current_value || 0) + 1;
 				      	});
 				    }
@@ -728,8 +729,8 @@ if (!process.env.channelid) {
 			getTimeUntilNextExercise: function() {
 				var minMinutes = 30,
 				  	maxMinutes = 60;
-				if(moment().isAfter(moment().hours(17).minutes(0).seconds(0))){
-					var tempTimeout = (moment().add(1, 'days').hours(10).minutes(0).seconds(0).unix() - moment().unix()) * 1000;
+				if(moment().isAfter(moment().hours(22-timezoneOffset).minutes(0).seconds(0))){
+					var tempTimeout = (moment().add(1, 'days').hours(15-timezoneOffset).minutes(0).seconds(0).unix() - moment().unix()) * 1000;
 					setTimeout(function (){
 						slack.postMessage("Get Ready! We will start in 10min!");
 					},tempTimeout - 10 * 60 * 1000);
@@ -816,11 +817,9 @@ if (!process.env.channelid) {
 				}
 			}
 		};
-		var tempTimeout = (moment().hours(10).minutes(0).seconds(0).unix() - moment().unix()) * 1000;
-		console.log(tempTimeout);
-		console.log(tempTimeout - 10 * 60 * 1000);
+		var tempTimeout = (moment().add(1,'days').hours(15-timezoneOffset).minutes(0).seconds(0).unix() - moment().unix()) * 1000;
 		setTimeout(function (){
-			//slack.postMessage("Get Ready! We will start in 10min!");
+			slack.postMessage("Get Ready! We will start in 10min!");
 		},tempTimeout - 10 * 60 * 1000);
 		train.scheduleNewExercise(tempTimeout,train.pickExercise());
 		train.scheduleNewExercise(0,train.pickExercise());
