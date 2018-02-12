@@ -13,6 +13,7 @@ if (!process.env.channelid) {
     console.log('Error: Specify channelid in environment');
     process.exit(1);
 }
+// slack bot id ---- come from the token
 
 !(function () {
 
@@ -103,7 +104,13 @@ if (!process.env.channelid) {
 				type: "count",
 				range: "10-14",
 				increments: 2
-			},{
+			},/*{
+				name:"Pisten Squats",
+				description:"?",
+				type: "count",
+				range: "10-14",
+				increments: 2
+			}*/,{
 				name:"Lunge Jump",
 				description:"Ready to impress some friends? Stand with the feet together and lunge forward with the right foot. Jump straight up, propelling the arms forward while keeping the elbows bent. While in the air, switch legs and land in a lunge with the opposite leg forward. Repeat and continue switching legs. Try to do XXX!",
 				type: "count",
@@ -123,7 +130,7 @@ if (!process.env.channelid) {
 				increments: 2
 			},{
 				name:"Stairs",
-				description:"Run all the way to the 6th floor and back XXX times.",
+				description:"Using the stairs run all the way to the 1st floor and back XXX times.",
 				type: "count",
 				range: "1-1",
 				increments: 1
@@ -190,13 +197,13 @@ if (!process.env.channelid) {
 				type: "count",
 				range: "6-10",
 				increments: 1
-			},{
+			},/*{
 				name:"Handstand Push-Up",
 				description:"Fair warning: This move is for the pros. Get set in a headstand position against a wall and bend the elbows at a 90-degree angle, doing an upside down push-up (so the head moves toward the floor and the legs remain against the wall). First timer? Grab a friend to spot you—safety first!",
 				type: "count",
 				range: "4-6",
 				increments: 1
-			},{
+			},*/{
 				name:"Judo Push-up",
 				description:"From a push-up position, raise up those hips and in one swift movement (Hai-yah!) use the arms to lower the front of the body until the chin comes close to the floor. Swoop the head and shoulders upward and lower the hips, keeping the knees off the ground. Reverse the move to come back to the raised-hip position. Try to repeat XXX times.",
 				type: "count",
@@ -748,7 +755,7 @@ if (!process.env.channelid) {
 					}
 				}
 				say("Alright!");
-				say("Our " + minutes + "min class will begin now!");
+				say("Your " + minutes + "min class will begin now!");
 				this.runExercise(say,type,level[difficulty].intervalSec,level[difficulty].restSec,minutes,function () {
 					say("Awesome!");
 					say("You completed your " + minutes + "minute workout!");
@@ -794,26 +801,39 @@ if (!process.env.channelid) {
 				}
 			}
 		};
-		// var tempTimeout = (moment().hours(10).minutes(0).seconds(0).unix() - moment().unix()) * 1000;
-		// setTimeout(function (){
-		// 	slack.postMessage("Get Ready! We will start in 10min!");
-		// },tempTimeout - 10 * 60 * 1000);
-		// train.scheduleNewExercise(tempTimeout,train.pickExercise());
-		// train.scheduleNewExercise(0,train.pickExercise());
+		var tempTimeout = (moment().hours(10).minutes(0).seconds(0).unix() - moment().unix()) * 1000;
+		setTimeout(function (){
+			slack.postMessage("Get Ready! We will start in 10min!");
+		},tempTimeout - 10 * 60 * 1000);
+		//train.scheduleNewExercise(tempTimeout,train.pickExercise());
+		//train.scheduleNewExercise(0,train.pickExercise());
 
-	// controller.hears(['chuck','norris','chuck norris'],'direct_mention,mention,ambient',function(bot, message) { 
-	// 	slack.postGif('chuck+norris');
-	// 	slack.postMessage(funChuckFacts[util.random(0,funChuckFacts.length-1)]);
+	controller.hears(['chuck','norris','chuck norris'],'direct_mention,mention,ambient',function(bot, message) { 
+		slack.postGif('chuck+norris');
+		slack.postMessage(funChuckFacts[util.random(0,funChuckFacts.length-1)]);
+	});
+	// controller.hears(['(start class [0-9]+ (min|minutes) [a-Z]+ [a-Z]+)'],'direct_message',function(bot, message) {
+	// 	var type = 	"",
+	// 		say = function(text){slack.postMessage(text,message.user);},
+	// 		difficulty = "hard",
+	// 		minutes = 1;
+
+	// 	console.log(message);
+
+
+	// 	// if(message.user == "U0ALEFATY"){//philipp ;P
+	// 	// 	classes.startClass(say,type,difficulty,minutes);
+	// 	// 	//slack.postMessage(message.text);
+	// 	// }
 	// });
-	controller.hears(['(start class)'],'direct_message',function(bot, message) {
-		var type = 	"",
-			say = function(text){slack.postMessage(text,message.user);},
-			difficulty = "hard",
-			minutes = 1;
-
+	controller.hears(['.'],'direct_message',function(bot, message) {
 		if(message.user == "U0ALEFATY"){//philipp ;P
-			classes.startClass(say,type,difficulty,minutes);
-			//slack.postMessage(message.text);
+			// classes.startClass(say,type,difficulty,minutes);
+			// watercooler channel ID = C07J02HD0
+			// chuckknows channel ID = C0K2A2R7U
+			// bot-in-training-ch channel ID = C0K904ZUY
+			// bot-in-training bot id = 
+			slack.postMessage(message.text);
 		}
 	});
 
