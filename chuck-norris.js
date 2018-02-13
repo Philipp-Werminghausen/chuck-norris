@@ -708,7 +708,7 @@ if (!process.env.channelid) {
 								slack.postMessage(exercise.description.replace(/XXX/,interval));
 							});
 							util.wait(1,function () {
-								slack.postGif(exercise.name);
+								//slack.postGif(exercise.name);
 							});
 							util.wait(10,function () {
 								slack.postMessage(nextUp);
