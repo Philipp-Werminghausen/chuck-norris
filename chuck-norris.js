@@ -822,10 +822,10 @@ if (!process.env.channelid) {
 			slack.postMessage("Get Ready! We will start in 10min!");
 		},tempTimeout - 10 * 60 * 1000);
 		//train.scheduleNewExercise(tempTimeout,train.pickExercise());
-		train.scheduleNewExercise(30 * 60 * 1000,exercises.legs[9]);
+		train.scheduleNewExercise(25 * 60 * 1000,exercises.core[11]);
 
 	controller.hears(['chuck','norris','chuck norris'],'direct_mention,mention,ambient',function(bot, message) { 
-		slack.postMessage(funChuckFacts[util.random(0,funChuckFacts.length-1)]);
+		//slack.postMessage(funChuckFacts[util.random(0,funChuckFacts.length-1)]);
 		slack.inviteUserToChannel(message.user);
 	});
 	// controller.hears(['(start class [0-9]+ (min|minutes) [a-Z]+ [a-Z]+)'],'direct_message',function(bot, message) {
