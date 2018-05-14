@@ -817,10 +817,10 @@ if (!process.env.channelid) {
 				}
 			}
 		};
-		var tempTimeout = 2 * 60 * 1000;
+		var tempTimeout = 11 * 60 * 1000;
 		setTimeout(function (){
-			slack.postMessage("Get Ready! We will start in 2min!");
-		},tempTimeout - 1 * 60 * 1000);
+			slack.postMessage("Get Ready! We will start in 10min!");
+		},tempTimeout - 10 * 60 * 1000);
 		train.scheduleNewExercise(tempTimeout,train.pickExercise());
 		//train.scheduleNewExercise(10 * 60 * 1000,exercises.fullBody[3]);
 
