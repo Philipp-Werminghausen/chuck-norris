@@ -23,7 +23,7 @@ if (!process.env.channelid) {
 	    request = require('request'),
 	    Firebase = require('firebase'),
 	    moment = require('moment'),
-	    timezoneOffset = 0;
+	    timezoneOffset = 1;
 
 	var controller = Botkit.slackbot({
 	    debug: false,
@@ -729,7 +729,7 @@ if (!process.env.channelid) {
 			getTimeUntilNextExercise: function() {
 				var minMinutes = 30,
 				  	maxMinutes = 60;
-				if(moment().isAfter(moment().hours(22-timezoneOffset).minutes(0).seconds(0))){
+				if(moment().isAfter(moment().hours(21-timezoneOffset).minutes(0).seconds(0))){
 					var tempTimeout = (moment().add(1, 'days').hours(15-timezoneOffset).minutes(0).seconds(0).unix() - moment().unix()) * 1000;
 					setTimeout(function (){
 						slack.postMessage("Get Ready! We will start in 10min!");
